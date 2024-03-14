@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup Label="NuGet Package Metadata">
+		<Authors>Caleb Frederickson</Authors>
+		<Company>PSSharp</Company>
+		<!--<GeneratePackageOnBuild>True</GeneratePackageOnBuild>-->
+		<PackageTags>csharp-sourcegenerator</PackageTags>
+		<Description>Extends URI functionality and provides models and source-generated implementations for query string models</Description>
+		<PackageProjectUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</RepositoryUrl>
+		<Version>0.0.1.0</Version>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\PSSharp.Extensions.Uri.Generator\PSSharp.Extensions.Uri.Generator.csproj" IncludeAssets="none" PrivateAssets="none" ExcludeAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="$(OutputPath)\PSSharp.Extensions.Uri.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+
+</Project>

@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<RootNamespace>PSSharp.Extensions.Uri</RootNamespace>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+	</PropertyGroup>
+
+	<PropertyGroup Label="NuGet Package Metadata">
+		<Authors>Caleb Frederickson</Authors>
+		<Company>PSSharp</Company>
+		<!--<GeneratePackageOnBuild>True</GeneratePackageOnBuild>-->
+		<PackageTags>csharp-sourcegenerator</PackageTags>
+		<Description>Source-generator for PSSharp.Extensions.Uri implementations.</Description>
+		<PackageProjectUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</RepositoryUrl>
+		<Version>0.0.1.0</Version>
+	</PropertyGroup>
+
+	<ItemGroup Label="NuGet Dependencies">
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all"></PackageReference>
+	</ItemGroup>
+
+</Project>
