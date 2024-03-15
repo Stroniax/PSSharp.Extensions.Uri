@@ -7,13 +7,11 @@ internal partial record GeneratedQueryStringExample : IQueryStringModel
     public string Test { get; set; } = string.Empty;
 
     [QueryStringParameter("foo")]
-    [QueryStringCommaSeparatedCollection]
     public string[] Foo { get; set; } = [];
 
     [QueryStringParameter("bar")]
     public string[] Bar { get; set; } = [];
 
-    [QueryStringCommaSeparatedCollection]
     public int[] Baz { get; set; } = [];
 
     public int[] Qux { get; set; } = [];

@@ -2,7 +2,7 @@ namespace PSSharp.Extensions.Uri;
 
 using System;
 
-public class UriWithQueryParameterTests
+public sealed partial class UriExtensionsTests
 {
     [Theory]
     [InlineData("http://example.com", "test", "value", "http://example.com/?test=value")]

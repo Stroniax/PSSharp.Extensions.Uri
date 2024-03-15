@@ -2,7 +2,7 @@
 
 using System;
 
-public sealed class UriWithQueryParametersTests
+public sealed partial class UriExtensionsTests
 {
     public static TheoryData<Uri, Dictionary<string, string?>, Uri> AddQueryData()
     {
