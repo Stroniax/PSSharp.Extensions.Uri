@@ -3,16 +3,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34616.47
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSSharp.Extensions.Uri", "PSSharp.Extensions.Uri\PSSharp.Extensions.Uri.csproj", "{CAEAFC44-7C68-4E62-B6B1-9D2F3518A2D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSSharp.Extensions.Uri", "PSSharp.Extensions.Uri\PSSharp.Extensions.Uri.csproj", "{CAEAFC44-7C68-4E62-B6B1-9D2F3518A2D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSSharp.Extensions.Uri.Tests", "PSSharp.Extensions.Uri.Tests\PSSharp.Extensions.Uri.Tests.csproj", "{ECC74C00-794B-4A6D-94C9-59A922EF6BD2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSSharp.Extensions.Uri.Tests", "PSSharp.Extensions.Uri.Tests\PSSharp.Extensions.Uri.Tests.csproj", "{ECC74C00-794B-4A6D-94C9-59A922EF6BD2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSSharp.Extensions.Uri.Generator", "PSSharp.Extensions.Uri.Generator\PSSharp.Extensions.Uri.Generator.csproj", "{F24A1DCC-7407-4A3F-93B4-C2B4067FCE1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PSSharp.Extensions.Uri.Generator", "PSSharp.Extensions.Uri.Generator\PSSharp.Extensions.Uri.Generator.csproj", "{F24A1DCC-7407-4A3F-93B4-C2B4067FCE1D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8BEA24F8-D1BC-4AFD-BB76-72198440F763}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PSSharp.Extensions.Uri.Benchmarks", "PSSharp.Extensions.Uri.Benchmarks\PSSharp.Extensions.Uri.Benchmarks.csproj", "{D81E8334-37DA-426E-A64F-7CF256B9CFDB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +34,10 @@ Global
 		{F24A1DCC-7407-4A3F-93B4-C2B4067FCE1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F24A1DCC-7407-4A3F-93B4-C2B4067FCE1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F24A1DCC-7407-4A3F-93B4-C2B4067FCE1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D81E8334-37DA-426E-A64F-7CF256B9CFDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D81E8334-37DA-426E-A64F-7CF256B9CFDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D81E8334-37DA-426E-A64F-7CF256B9CFDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D81E8334-37DA-426E-A64F-7CF256B9CFDB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

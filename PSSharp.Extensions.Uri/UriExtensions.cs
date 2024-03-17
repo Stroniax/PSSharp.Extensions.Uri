@@ -9,7 +9,7 @@ using System.Text;
 /// <summary>
 /// Defines extension methods for <see cref="Uri"/> and related types.
 /// </summary>
-public static class UriExtensions
+public static partial class UriExtensions
 {
     /// <summary>
     /// Appends the query string representation of <paramref name="model"/> to a
@@ -164,6 +164,55 @@ public static class UriExtensions
         return uri;
     }
 
+    public static bool HasQueryParameters(this Uri uri)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+
+        var index = uri.AbsoluteUri.IndexOf('?');
+        var fragment = uri.AbsoluteUri.IndexOf('#');
+
+        return index != -1 && index != uri.AbsoluteUri.Length - 1 && index != fragment - 1;
+    }
+
+    /// <summary>
+    /// Gets the escaped query string of the URI as a span.
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks>
+    /// The <see cref="Uri"/> class instantiates a <see cref="string"/> for each of its members as they are
+    /// accessed. This method avoids that allocation by returning a span of the query string. It is a minor
+    /// performance advantage that only has value if the property is not actually accessed. Nevertheless,
+    /// for most internal code we operate only on a span and therefore this method is sufficient.
+    /// <para>
+    /// <a href="https://datatracker.ietf.org/doc/html/rfc3986#section-3.4">RFC</a>
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is null</exception>
+    /// <exception cref="InvalidOperationException"><paramref name="uri"/> is not absolute</exception>
+    public static ReadOnlySpan<char> QuerySpan(this Uri uri)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+
+        if (!uri.IsAbsoluteUri)
+        {
+            throw new InvalidOperationException("The URI must be an absolute URI.");
+        }
+
+        var startQuery = uri.AbsoluteUri.IndexOf('?');
+        if (startQuery == -1)
+        {
+            return [];
+        }
+        var endQuery = uri.AbsoluteUri.IndexOf('#');
+        if (endQuery == -1)
+        {
+            endQuery = uri.AbsoluteUri.Length;
+        }
+
+        Debug.Assert(endQuery >= startQuery);
+        return uri.AbsoluteUri.AsSpan(startQuery, endQuery - startQuery);
+    }
+
     /// <summary>
     /// Creates a <see cref="Dictionary{TKey, TValue}"/> from the query string of the absolute URI.
     /// </summary>
@@ -233,16 +282,6 @@ public static class UriExtensions
         return parameters;
     }
 
-    public static bool HasQueryParameters(this Uri uri)
-    {
-        ArgumentNullException.ThrowIfNull(uri);
-
-        var index = uri.AbsoluteUri.IndexOf('?');
-        var fragment = uri.AbsoluteUri.IndexOf('#');
-
-        return index != -1 && index != uri.AbsoluteUri.Length - 1 && index != fragment - 1;
-    }
-
     public static TModel GetQueryParameters<TModel>(this Uri uri)
         where TModel : IQueryStringModel, ISpanParsable<TModel>
     {
@@ -251,39 +290,157 @@ public static class UriExtensions
         return TModel.Parse(uri.QuerySpan(), null);
     }
 
-    /// <summary>
-    /// Gets the escaped query string of the URI as a span.
-    /// </summary>
-    /// <returns></returns>
-    /// <remarks>
-    /// The <see cref="Uri"/> class instantiates a <see cref="string"/> for each of its members as they are
-    /// accessed. This method avoids that allocation by returning a span of the query string. It is a minor
-    /// performance advantage that only has value if the property is not actually accessed. Nevertheless,
-    /// for most internal code we operate only on a span and therefore this method is sufficient.
-    /// </remarks>
-    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is null</exception>
-    /// <exception cref="InvalidOperationException"><paramref name="uri"/> is not absolute</exception>
-    public static ReadOnlySpan<char> QuerySpan(this Uri uri)
+    public static bool TryGetQueryParameter<T>(
+        this Uri uri,
+        string parameterName,
+        [MaybeNullWhen(false)] out T parameterValue
+    )
+        where T : IParsable<T>
+    {
+        if (uri.TryGetQueryParameter(parameterName, out var stringValue))
+        {
+            return T.TryParse(stringValue, null, out parameterValue);
+        }
+        else
+        {
+            parameterValue = default;
+            return false;
+        }
+    }
+
+    public static bool TryGetQueryParameter(
+        this Uri uri,
+        string parameterName,
+        [MaybeNullWhen(false)] out string parameterValue
+    )
+    {
+        if (uri.TryGetQueryParameterSpan(parameterName, out var encodedValue))
+        {
+            parameterValue = Uri.UnescapeDataString(encodedValue.ToString());
+            return true;
+        }
+
+        parameterValue = default;
+        return false;
+    }
+
+    public static bool TryGetQueryParameterSpan(
+        this Uri uri,
+        string parameterName,
+        out ReadOnlySpan<char> encodedValue
+    )
     {
         ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(parameterName);
 
-        if (!uri.IsAbsoluteUri)
+        var remainingQuery = uri.QuerySpan();
+        if (remainingQuery.IsEmpty)
         {
-            throw new InvalidOperationException("The URI must be an absolute URI.");
+            encodedValue = default;
+            return false;
         }
 
-        var startQuery = uri.AbsoluteUri.IndexOf('?');
-        if (startQuery == -1)
+        var escapedParameter = Uri.EscapeDataString(parameterName).AsSpan();
+        var parameterIndex = remainingQuery.IndexOf(escapedParameter);
+        if (parameterIndex == -1)
         {
-            return [];
+            encodedValue = default;
+            return false;
         }
-        var endQuery = uri.AbsoluteUri.IndexOf('#');
-        if (endQuery == -1)
+        // parameterIndex != 0: char 0 is always '?'
+        if (
+            parameterIndex == 1 && remainingQuery[parameterIndex - 1] == '?'
+            || (remainingQuery[parameterIndex - 1] != '&')
+        )
         {
-            endQuery = uri.AbsoluteUri.Length;
+            encodedValue = default;
+            return false;
         }
 
-        Debug.Assert(endQuery >= startQuery);
-        return uri.AbsoluteUri.AsSpan(startQuery, endQuery - startQuery);
+        var valueIndex = parameterIndex + escapedParameter.Length;
+        if (valueIndex == remainingQuery.Length)
+        {
+            encodedValue = default;
+            return true;
+        }
+
+        if (remainingQuery[valueIndex] != '=')
+        {
+            encodedValue = default;
+            return false;
+        }
+
+        var valueStart = valueIndex + 1;
+        var valueEnd = remainingQuery[valueStart..].IndexOfAny('&', '#');
+        if (valueEnd == -1)
+        {
+            valueEnd = remainingQuery.Length;
+        }
+        else
+        {
+            valueEnd += valueStart;
+        }
+
+        encodedValue = remainingQuery[valueStart..valueEnd];
+        return true;
     }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="valueToUnescape">The encoded value to be unescaped.</param>
+    /// <param name="destination">A buffer into which the string may be decoded. Either the entire decoded
+    /// value will be written, or no data will be written; no partial-decoding will occur.</param>
+    /// <param name="length">The length required to decode the string.</param>
+    /// <returns>A value indicating whether the string could be unescaped. If
+    /// <see langword="false"/>, resize the buffer and try again.</returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public static bool TryUnescapeDataString(
+        ReadOnlySpan<char> valueToUnescape,
+        Span<char> destination,
+        out int length
+    )
+    {
+        length = CalculateLengthWhenDecoded(valueToUnescape);
+        if (destination.Length < length)
+        {
+            return false;
+        }
+
+        var percentIndex = valueToUnescape.IndexOf('%');
+        while (percentIndex != -1)
+        {
+            // copy the characters before the percent
+            valueToUnescape[..percentIndex].CopyTo(destination);
+            destination = destination[percentIndex..];
+            valueToUnescape = valueToUnescape[percentIndex..];
+
+            if (
+                valueToUnescape.Length < 3
+                || !char.IsAsciiHexDigit(valueToUnescape[1])
+                || !char.IsAsciiHexDigit(valueToUnescape[2])
+            )
+            {
+                destination[0] = valueToUnescape[0];
+                destination = destination[1..];
+                valueToUnescape = valueToUnescape[1..];
+            }
+            else
+            {
+                destination[0] = (char)(
+                    HexChars.IndexOf(valueToUnescape[1]) << 4 | HexChars.IndexOf(valueToUnescape[2])
+                );
+                destination = destination[1..];
+                valueToUnescape = valueToUnescape[3..];
+            }
+
+            percentIndex = valueToUnescape.IndexOf('%');
+        }
+
+        valueToUnescape.CopyTo(destination);
+
+        return true;
+    }
+
+    private static ReadOnlySpan<char> HexChars => "0123456789ABCDEF";
 }

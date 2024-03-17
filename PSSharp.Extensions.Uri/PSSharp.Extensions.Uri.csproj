@@ -17,6 +17,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="PSSharp.Extensions.Uri.Tests"/>
+		<InternalsVisibleTo Include="PSSharp.Extensions.Uri.Benchmarks"/>
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\PSSharp.Extensions.Uri.Generator\PSSharp.Extensions.Uri.Generator.csproj" IncludeAssets="none" PrivateAssets="none" ExcludeAssets="all" />
 	</ItemGroup>
 
