@@ -3,22 +3,17 @@
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<PropertyGroup Label="NuGet Package Metadata">
-		<Authors>Caleb Frederickson</Authors>
-		<Company>PSSharp</Company>
-		<!--<GeneratePackageOnBuild>True</GeneratePackageOnBuild>-->
 		<PackageTags>csharp-sourcegenerator</PackageTags>
 		<Description>Extends URI functionality and provides models and source-generated implementations for query string models</Description>
-		<PackageProjectUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</RepositoryUrl>
-		<Version>0.0.1.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<InternalsVisibleTo Include="PSSharp.Extensions.Uri.Tests"/>
-		<InternalsVisibleTo Include="PSSharp.Extensions.Uri.Benchmarks"/>
+		<InternalsVisibleTo Include="PSSharp.Extensions.Uri.Tests" />
+		<InternalsVisibleTo Include="PSSharp.Extensions.Uri.Benchmarks" />
 	</ItemGroup>
 
 	<ItemGroup>

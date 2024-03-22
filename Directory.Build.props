@@ -1,0 +1,22 @@
+<Project>
+	<PropertyGroup>
+		<RootNamespace>PSSharp.Extensions.Uri</RootNamespace>
+	</PropertyGroup>
+
+	<PropertyGroup Label="NuGet Package Metadata" Condition="'$(IsPackable)' != 'false'">
+		<Authors>Caleb Frederickson</Authors>
+		<Company>PSSharp</Company>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageTags>csharp-sourcegenerator</PackageTags>
+		<Description>Source-generator for PSSharp.Extensions.Uri implementations.</Description>
+		<PackageProjectUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+		<VersionPrefix>0.1.0</VersionPrefix>
+		<VersionSuffix>alpha.1</VersionSuffix>
+
+		<AssemblyVersion>$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
+		<FileVersion>$(VersionPrefix)-$(VersionSuffix)</FileVersion>
+	</PropertyGroup>
+</Project>
