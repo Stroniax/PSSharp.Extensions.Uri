@@ -6,17 +6,16 @@ using System;
 
 /// <summary>
 /// Identifies a custom serialization method that the <see cref="IQueryStringModel"/> source generator will
-/// call to serialize a value of a query string parameter. The method must match the following signature:
+/// call to serialize a value of a query string parameter. The method must match the following signature,
+/// though the name will vary and is identified by <paramref name="serializer"/>:
 /// <code>
 /// <c>
-/// internal static string Serialize(             | internal static void Serialize(
-///     TThis queryModel,                         |     TThis queryModel,
-///     string memberName,                        |     string memberName,
-///     TMember memberValue,                      |     TMember memberValue,
-///     out bool isUriEncoded                     |     Span&lt;char&gt; uriEncodedBuffer,
-/// );                                            |     ref int charsWritten,
-///                                               |     out bool hasMoreData
-///                                               | );
+/// private void Serialize(
+///     StringBuilder query,
+///     string memberName,          // optional
+///     TMember memberValue,
+///     ref bool hasQueryParams
+/// );
 /// </c>
 /// </code>
 /// </summary>

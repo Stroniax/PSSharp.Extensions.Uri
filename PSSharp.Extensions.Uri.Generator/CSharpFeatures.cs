@@ -1,6 +1,6 @@
 ﻿namespace System.Runtime.CompilerServices
 {
-    public sealed class IsExternalInit : Attribute;
+    internal static class IsExternalInit;
 }
 
 namespace System
