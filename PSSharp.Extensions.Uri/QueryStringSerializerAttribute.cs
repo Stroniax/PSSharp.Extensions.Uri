@@ -19,7 +19,7 @@ using System;
 /// </c>
 /// </code>
 /// </summary>
-/// <param name="deserializer">The name of a method used to deserialize the member.</param>
+/// <param name="serializer">The name of a method used to serialize the member.</param>
 [AttributeUsage(
     AttributeTargets.Property | AttributeTargets.Field,
     Inherited = true,

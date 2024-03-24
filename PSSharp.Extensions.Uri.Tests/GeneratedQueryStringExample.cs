@@ -14,7 +14,19 @@ internal partial record GeneratedQueryStringExample : IQueryStringModel
 
     public int[] Baz { get; set; } = [];
 
+    [QueryStringCondition("IfQux")]
+    [QueryStringSerializer("WriteQux")]
     public int[] Qux { get; set; } = [];
+
+    private bool IfQux()
+    {
+        return true;
+    }
+
+    private void WriteQux(StringBuilder ex, string memberName, int[] qux, ref bool hasQueryParams)
+    {
+        throw new NotImplementedException();
+    }
 
     public partial void AppendQueryString(StringBuilder query, ref bool hasQueryParams);
 

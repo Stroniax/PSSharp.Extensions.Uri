@@ -6,7 +6,7 @@
 	<PropertyGroup Label="NuGet Package Metadata" Condition="'$(IsPackable)' != 'false'">
 		<Authors>Caleb Frederickson</Authors>
 		<Company>PSSharp</Company>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<!--<GeneratePackageOnBuild>True</GeneratePackageOnBuild>-->
 		<PackageTags>csharp-sourcegenerator</PackageTags>
 		<Description>Source-generator for PSSharp.Extensions.Uri implementations.</Description>
 		<PackageProjectUrl>https://github.com/Stroniax/PSSharp.Extensions.Uri</PackageProjectUrl>
@@ -15,8 +15,9 @@
 
 		<VersionPrefix>0.1.0</VersionPrefix>
 		<VersionSuffix>alpha.1</VersionSuffix>
+		<VersionRevision>1</VersionRevision>
 
-		<AssemblyVersion>$(VersionPrefix)-$(VersionSuffix)</AssemblyVersion>
-		<FileVersion>$(VersionPrefix)-$(VersionSuffix)</FileVersion>
+		<AssemblyVersion>$(VersionPrefix).$(VersionRevision)</AssemblyVersion>
+		<FileVersion>$(VersionPrefix).$(VersionRevision)</FileVersion>
 	</PropertyGroup>
 </Project>

@@ -79,4 +79,26 @@ public static class UriDiagnostics
             true,
             customTags: ["PSSharp.Extensions.Uri.QueryString"]
         );
+
+    public static readonly DiagnosticDescriptor URI00008AmbiguousSerializeMethod =
+        new(
+            "URI00008",
+            "Ambiguous serialize method",
+            "The type {0} has multiple methods with the name '{1}' that match the signature for a custom serialization method. Specify the method name in the [QueryStringSerializer] attribute.",
+            "PSSharp.Usage",
+            DiagnosticSeverity.Error,
+            true,
+            customTags: ["PSSharp.Extensions.Uri.QueryString"]
+        );
+
+    public static readonly DiagnosticDescriptor URI00009SerializeMethodReused =
+        new(
+            "URI00009",
+            "Serialize method reused",
+            "The method name '{0}' is used for multiple [QueryStringSerializer] attributes. Specify a unique method name for each [QueryStringSerializer] attribute, or add a 'string memberName' as the second argument of the serializer method.",
+            "PSSharp.Usage",
+            DiagnosticSeverity.Warning,
+            true,
+            customTags: ["PSSharp.Extensions.Uri.QueryString"]
+        );
 }

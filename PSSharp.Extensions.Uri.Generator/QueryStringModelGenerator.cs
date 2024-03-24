@@ -43,12 +43,6 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                     QueryStringParameterAttribute: compilation.GetTypeByMetadataName(
                         "PSSharp.Extensions.Uri.QueryStringParameterAttribute"
                     ),
-                    QueryStringCommaSeparatedCollectionAttribute: compilation.GetTypeByMetadataName(
-                        "PSSharp.Extensions.Uri.QueryStringCommaSeparatedCollectionAttribute"
-                    ),
-                    QueryStringIgnoreAttribute: compilation.GetTypeByMetadataName(
-                        "PSSharp.Extensions.Uri.QueryStringIgnoreAttribute"
-                    ),
                     SpanParsable: compilation.GetTypeByMetadataName("System.ISpanParsable`1"),
                     Parsable: compilation.GetTypeByMetadataName("System.IParsable`1"),
                     String: compilation.GetSpecialType(SpecialType.System_String),
@@ -58,6 +52,18 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                     ReadOnlySpan: compilation.GetTypeByMetadataName("System.ReadOnlySpan`1"),
                     IEnumerableT: compilation.GetTypeByMetadataName(
                         "System.Collections.Generic.IEnumerable`1"
+                    ),
+                    QueryStringConditionAttribute: compilation.GetTypeByMetadataName(
+                        "PSSharp.Extensions.Uri.QueryStringConditionAttribute"
+                    ),
+                    QueryStringConditionEnum: compilation.GetTypeByMetadataName(
+                        "PSSharp.Extensions.Uri.QueryStringCondition"
+                    ),
+                    QueryStringDeserializerAttribute: compilation.GetTypeByMetadataName(
+                        "PSSharp.Extensions.Uri.QueryStringDeserializerAttribute"
+                    ),
+                    QueryStringSerializerAttribute: compilation.GetTypeByMetadataName(
+                        "PSSharp.Extensions.Uri.QueryStringSerializerAttribute"
                     )
                 )
         );
@@ -284,8 +290,16 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                 .Any(a =>
                                     SymbolEqualityComparer.Default.Equals(
                                         a.AttributeClass,
-                                        context.Others.QueryStringIgnoreAttribute
+                                        context.Others.QueryStringConditionAttribute
                                     )
+                                    && a.ConstructorArguments.Length == 1
+                                    && SymbolEqualityComparer.Default.Equals(
+                                        a.ConstructorArguments[0].Type,
+                                        context.Others.QueryStringConditionEnum
+                                    )
+                                    && a.ConstructorArguments[0].Kind == TypedConstantKind.Enum
+                                    && a.ConstructorArguments[0].Value is int value
+                                    && value == 2 // QueryStringCondition.Never
                                 )
                             && m
                                 is IPropertySymbol { IsImplicitlyDeclared: false }
@@ -341,13 +355,113 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                             )
                                         )
                                 );
-                            var isCommaSeparatedCollection = m.GetAttributes()
-                                .Any(a =>
+                            var serializeMethodName = m.GetAttributes()
+                                .Where(a =>
                                     SymbolEqualityComparer.Default.Equals(
                                         a.AttributeClass,
-                                        context.Others.QueryStringCommaSeparatedCollectionAttribute
+                                        context.Others.QueryStringSerializerAttribute
                                     )
+                                )
+                                .Select(a => (string)a.ConstructorArguments[0].Value!)
+                                .FirstOrDefault();
+                            var serializeMethod = members
+                                .Where(mm =>
+                                    mm.Name == serializeMethodName
+                                    && mm is IMethodSymbol { Parameters.Length: 3 or 4 } method
+                                    && IsAssignableTo(type, method.Parameters[^2].Type)
+                                )
+                                .FirstOrDefault();
+
+                            static bool IsAssignableTo(
+                                ITypeSymbol type,
+                                ITypeSymbol assignableTo
+                            ) =>
+                                SymbolEqualityComparer.Default.Equals(type, assignableTo)
+                                || type.AllInterfaces.Any(i =>
+                                    SymbolEqualityComparer.Default.Equals(i, assignableTo)
+                                )
+                                || (
+                                    assignableTo.BaseType is not null
+                                    && IsAssignableTo(type, assignableTo.BaseType)
                                 );
+
+                            var deserializeMethodName = m.GetAttributes()
+                                .Where(a =>
+                                    SymbolEqualityComparer.Default.Equals(
+                                        a.AttributeClass,
+                                        context.Others.QueryStringDeserializerAttribute
+                                    )
+                                )
+                                .Select(a => (string)a.ConstructorArguments[0].Value!)
+                                .FirstOrDefault();
+
+                            var deserializeMethod = members
+                                .Where(mm =>
+                                    mm.Name == deserializeMethodName
+                                    && mm is IMethodSymbol { Parameters.Length: 3 or 4 } method
+                                    && IsAssignableTo(method.Parameters[^1].Type, type)
+                                )
+                                .FirstOrDefault();
+
+                            var conditionAttribute = m.GetAttributes()
+                                .Where(a =>
+                                    SymbolEqualityComparer.Default.Equals(
+                                        a.AttributeClass,
+                                        context.Others.QueryStringConditionAttribute
+                                    )
+                                )
+                                .FirstOrDefault();
+
+                            var conditionMethodName = conditionAttribute is not null
+                                ? conditionAttribute.ConstructorArguments[0].Value as string
+                                : null;
+
+                            var conditionMethod = members
+                                .Where(mm =>
+                                    mm.Name == conditionMethodName
+                                    && mm is IMethodSymbol { Parameters.Length: 3 } method
+                                    && SymbolEqualityComparer.Default.Equals(
+                                        method.Parameters[1].Type,
+                                        context.Others.String
+                                    )
+                                    && IsAssignableTo(type, method.Parameters[2].Type)
+                                )
+                                .Cast<IMethodSymbol>()
+                                .FirstOrDefault();
+
+                            var conditionTakesSelf = SymbolEqualityComparer.Default.Equals(
+                                conditionMethod?.Parameters[0].Type,
+                                context.Source
+                            );
+
+                            var conditionTakesMemberName = SymbolEqualityComparer.Default.Equals(
+                                conditionMethod?.Parameters[conditionTakesSelf ? 1 : 0].Type,
+                                context.Others.String
+                            );
+
+                            var conditionTakesValue = SymbolEqualityComparer.Default.Equals(
+                                conditionMethod
+                                    ?.Parameters[
+                                        conditionTakesSelf && conditionTakesMemberName
+                                            ? 2
+                                            : (conditionTakesSelf || conditionTakesMemberName)
+                                                ? 1
+                                                : 0
+                                    ]
+                                    .Type,
+                                type
+                            );
+
+                            var conditionAlways =
+                                conditionAttribute is not null
+                                && conditionAttribute.ConstructorArguments[0].Value is int value
+                                && value == 1; // QueryStringCondition.Always
+
+                            var conditionNotDefault =
+                                conditionAttribute is not null
+                                && conditionAttribute.ConstructorArguments[0].Value is int value1
+                                && value1 == 0; // QueryStringCondition.WhenNotDefault
+
                             return new QueryStringModelParameter(
                                 name,
                                 type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
@@ -355,7 +469,18 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                 isSpanParsable,
                                 parameterName,
                                 isCollection,
-                                isCommaSeparatedCollection
+                                serializeMethodName,
+                                serializeMethod?.IsStatic ?? false,
+                                deserializeMethodName,
+                                ((IMethodSymbol?)deserializeMethod)?.Parameters.Length == 4,
+                                conditionMethodName,
+                                conditionMethod?.IsStatic ?? false,
+                                conditionTakesSelf,
+                                conditionTakesMemberName,
+                                conditionTakesValue,
+                                conditionAlways,
+                                false,
+                                conditionNotDefault
                             );
                         })
                         .ToImmutableArray()
@@ -516,19 +641,69 @@ public class QueryStringModelGenerator : IIncrementalGenerator
 
         foreach (var member in source.Members)
         {
-            AppendIndentation(text, indentation);
-            text.Append("if (this.").Append(member.MemberName).Append(" is not null");
-            if (member.IsCollection)
+            // Condition
+            if (member.QueryConditionAlways)
             {
-                text.Append(" && global::System.Linq.Enumerable.Any(this.")
+                AppendIndentation(text, indentation);
+                text.Append("//")
                     .Append(member.MemberName)
-                    .Append(")");
+                    .AppendLine(" : QueryStringCondition.Always");
             }
-            text.AppendLine(")");
+            else if (member.QueryConditionNever)
+            {
+                continue;
+            }
+            else if (member.ConditionMethod is not null)
+            {
+                AppendIndentation(text, indentation);
+                text.Append("if (");
+                if (!member.IsConditionMethodStatic)
+                {
+                    text.Append("this.");
+                }
+                text.Append(member.ConditionMethod).Append("(");
+
+                if (member.ConditionMethodTakesSelf)
+                {
+                    text.Append("this, ");
+                }
+                if (member.ConditionMethodTakesMemberName)
+                {
+                    text.Append('"').Append(member.MemberName).Append("\", ");
+                }
+                if (member.ConditionMethodTakesValue)
+                {
+                    text.Append("this.").Append(member.MemberName);
+                }
+                text.AppendLine("))");
+            }
+            else // if (member.QueryConditionWhenNotDefault)
+            {
+                AppendIndentation(text, indentation);
+                text.Append("if (this.")
+                    .Append(member.MemberName)
+                    .Append(" is not null")
+                    .AppendLine(")");
+            }
             AppendIndentation(text, indentation).AppendLine("{");
             indentation += 4;
 
-            if (member.IsCollection && !member.IsCommaSeparatedCollection)
+            // Value
+            if (member.SerializeMethod is not null)
+            {
+                AppendIndentation(text, indentation);
+                if (!member.IsSerializeMethodStatic)
+                {
+                    text.Append("this.");
+                }
+                text.Append(member.SerializeMethod)
+                    .Append("(query, \"")
+                    .Append(member.MemberName)
+                    .Append("\", this.")
+                    .Append(member.MemberName)
+                    .AppendLine(", ref hasQueryParams);");
+            }
+            else if (member.IsCollection)
             {
                 AppendIndentation(text, indentation)
                     .Append("foreach (var item in this.")
@@ -549,22 +724,6 @@ public class QueryStringModelGenerator : IIncrementalGenerator
 
                 indentation -= 4;
                 AppendIndentation(text, indentation).AppendLine("}");
-            }
-            else if (member.IsCollection && member.IsCommaSeparatedCollection)
-            {
-                AppendIndentation(text, indentation)
-                    .AppendLine("query.Append(hasQueryParams ? '&' : '?');");
-                AppendIndentation(text, indentation).AppendLine("hasQueryParams = true;");
-                AppendIndentation(text, indentation)
-                    .Append("var joined = string.Join(',', this.")
-                    .Append(member.MemberName)
-                    .AppendLine(");");
-                AppendIndentation(text, indentation)
-                    .Append("query.Append(\"")
-                    .Append(member.QueryStringParameterName)
-                    .AppendLine(
-                        "\").Append('=').Append(global::System.Uri.EscapeDataString(joined));"
-                    );
             }
             else
             {
