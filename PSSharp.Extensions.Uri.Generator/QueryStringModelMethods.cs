@@ -1,18 +1,14 @@
 ﻿namespace PSSharp.Extensions.Uri;
 
 /// <summary>
-///
+/// Methods to generate for an implementation of <c>IQueryStringModel</c>.
 /// </summary>
-/// <param name="Parse"></param>
-/// <param name="TryParse"></param>
-/// <param name="SpanParse"></param>
-/// <param name="SpanTryParse"></param>
+/// <param name="Parsable"></param>
+/// <param name="SpanParsable"></param>
 /// <param name="RecordPrintMembers">Generate a PrintMembers method if the type is a record type with a <c>partial bool PrintMembers(StringBuilder)</c> method.</param>
-public readonly record struct QueryStringModelMethods(
+public readonly partial record struct QueryStringModelMethods(
     bool AppendQueryString,
-    bool Parse,
-    bool TryParse,
-    bool SpanParse,
-    bool SpanTryParse,
+    ParsableSignatures Parsable,
+    ParsableSignatures SpanParsable,
     bool RecordPrintMembers
 );

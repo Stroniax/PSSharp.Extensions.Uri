@@ -7,16 +7,7 @@ public sealed record QueryStringModelParameter(
     bool IsSpanParsable,
     string QueryStringParameterName,
     bool IsCollection,
-    string? SerializeMethod,
-    bool IsSerializeMethodStatic,
-    string? DeserializeMethod,
-    bool DeserializeMethodTakesMemberName,
-    string? ConditionMethod,
-    bool IsConditionMethodStatic,
-    bool ConditionMethodTakesSelf,
-    bool ConditionMethodTakesMemberName,
-    bool ConditionMethodTakesValue,
-    bool QueryConditionAlways,
-    bool QueryConditionNever,
-    bool QueryConditionWhenNotDefault
+    SerializerImplementation Serialize,
+    DeserializerImplementation Deserialize,
+    ConditionImplementation Condition
 );
