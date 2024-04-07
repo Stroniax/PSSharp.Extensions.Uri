@@ -6,8 +6,14 @@ public abstract record DeserializerImplementation
 {
     private DeserializerImplementation() { }
 
+    /// <summary>
+    /// The type implements <c>System.IParsable&lt;T&gt;</c> which should be used.
+    /// </summary>
     public sealed record Parse : DeserializerImplementation;
 
+    /// <summary>
+    /// The type implements <c>System.ISpanParsable&lt;T&gt;</c> which should be used.
+    /// </summary>
     public sealed record SpanParse : DeserializerImplementation;
 
     /// <summary>
@@ -16,14 +22,37 @@ public abstract record DeserializerImplementation
     ///     [string memberName,]
     ///     [ReadOnlySpan&lt;char&gt; uriEncodedParameterName,]
     ///     ReadOnlySpan&lt;char&gt; uriEncodedParameterValue,
+    ///     [bool hasValue,]
     ///     out T result
     /// );
     /// </c></code>
     /// </summary>
-    public sealed record Method(string MethodName, bool HasMemberName, bool HasEncodedNameParameter)
+    public sealed record DeserializeFromMember(
+        string MethodName,
+        bool HasMemberName,
+        bool HasEncodedNameParameter,
+        bool HasHasValueParameter
+    ) : DeserializerImplementation;
+
+    /// <summary>
+    /// <code><c>
+    /// [accessibility] [inheritance] static bool {MethodName}(
+    ///     [string memberName,]
+    ///     ReadOnlySpan&lt;char&gt; queryString,
+    ///     out T value
+    /// );
+    /// </c></code>
+    /// </summary>
+    /// <param name="MethodName"></param>
+    public sealed record DeserializeFromQueryString(string MethodName, bool HasMemberName)
         : DeserializerImplementation;
 
-    public void Switch(Action parse, Action spanParse, Action<Method> method)
+    public void Switch(
+        Action parse,
+        Action spanParse,
+        Action<DeserializeFromMember> member,
+        Action<DeserializeFromQueryString> queryString
+    )
     {
         switch (this)
         {
@@ -33,8 +62,11 @@ public abstract record DeserializerImplementation
             case SpanParse:
                 spanParse();
                 break;
-            case Method m:
-                method(m);
+            case DeserializeFromMember m:
+                member(m);
+                break;
+            case DeserializeFromQueryString q:
+                queryString(q);
                 break;
             default:
                 throw new NotSupportedException($"Unmatched case: {GetType().Name}.");

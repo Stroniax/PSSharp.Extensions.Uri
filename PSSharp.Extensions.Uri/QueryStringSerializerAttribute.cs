@@ -12,8 +12,9 @@ using System;
 /// <c>
 /// private void Serialize(
 ///     QueryStringBuilder builder,
+///     TModel instance,             // optional if static
 ///     string memberName,          // optional
-///     TMember memberValue
+///     TMember memberValue        // optional
 /// );
 /// </c>
 /// </code>

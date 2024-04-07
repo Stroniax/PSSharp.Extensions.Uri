@@ -499,8 +499,9 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                         ? new DeserializerImplementation.SpanParse()
                                         : isParsable
                                             ? new DeserializerImplementation.Parse()
-                                            : new DeserializerImplementation.Method(
+                                            : new DeserializerImplementation.DeserializeFromMember(
                                                 deserializeMethodName,
+                                                true,
                                                 true,
                                                 true
                                             )

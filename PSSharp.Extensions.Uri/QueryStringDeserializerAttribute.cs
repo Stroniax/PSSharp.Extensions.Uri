@@ -20,7 +20,7 @@ using System;
 /// <code>
 /// <c>internal static bool TryDeserialize(
 ///     string memberName, // optional
-///     ReadOnlySequence&lt;char&gt; queryString
+///     ReadOnlySpan&lt;char&gt; queryString
 ///     out T result
 /// );</c>
 /// </code>
