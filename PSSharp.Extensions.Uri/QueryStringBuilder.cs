@@ -10,12 +10,83 @@ using System.Text;
 
 /// <summary>
 /// Constructs a query string.
+/// <para>
+/// <c>?q=foo</c> yields <c>KeyValuePair.Create("q", "foo")</c>
+/// </para>
+/// <para>
+/// <c>?q=&amp;other=arg</c> yields <c>KeyValuePair.Create("q", ""), KeyValuePair.Create("other", "arg")</c>
+/// </para>
+/// <para>
+/// <c>?q&amp;other=arg</c> yields <c>KeyValuePair.Create("q", null), KeyValuePair.Create("other", "arg")</c>
+/// </para>
 /// </summary>
-public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string, string>>
+public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string, string?>>
 {
     private readonly StringBuilder _builder = new();
 
-    int IReadOnlyCollection<KeyValuePair<string, string>>.Count => Count();
+    /// <inheritdoc cref="IReadOnlyCollection{T}.Count"/>
+    public int Count() => IsEmpty() ? 0 : _builder.ToString().Count(c => c == '&') + 1;
+
+    int IReadOnlyCollection<KeyValuePair<string, string?>>.Count => Count();
+
+    /// <summary>
+    /// Tests if the current builder instance has no elements.
+    /// </summary>
+    /// <returns></returns>
+    public bool IsEmpty() => _builder.Length == 0;
+
+    /// <summary>
+    /// Removes all elements from the current instance.
+    /// </summary>
+    public void Clear() => _builder.Clear();
+
+    /// <summary>
+    /// Enuemrates the key-value pairs of the current instance.
+    /// </summary>
+    /// <returns>An enumerator which iterates through all elements in the current query string.</returns>
+    public IEnumerator<KeyValuePair<string, string?>> GetEnumerator()
+    {
+        if (IsEmpty())
+        {
+            yield break;
+        }
+
+        // skip '?'
+        var remaining = _builder.ToString().AsSpan(1);
+        while (remaining.Length == 0)
+        {
+            // seek to end of current &key=value
+            var endOfKeyValue = remaining.IndexOf('&');
+            if (endOfKeyValue == -1)
+            {
+                endOfKeyValue = remaining.Length;
+                remaining = [];
+            }
+            else
+            {
+                remaining = remaining[(endOfKeyValue + 1)..];
+            }
+
+            var segment = remaining[..endOfKeyValue];
+
+            // split at '='
+            var equalsIndex = segment.IndexOf('=');
+            if (equalsIndex == -1)
+            {
+                yield return new(Uri.EscapeDataString(segment.ToString()), null);
+                continue;
+            }
+
+            var key = segment[..equalsIndex];
+            var value = segment[(equalsIndex + 1)..];
+            yield return new(
+                Uri.EscapeDataString(key.ToString()),
+                Uri.EscapeDataString(value.ToString())
+            );
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public bool ContainsKey(string key)
     {
@@ -86,15 +157,23 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
         return false;
     }
 
-    public bool TryGetMultipleValues(string key, out string[] multipleValues)
+    public bool TryGetMultipleValues(string key, out string?[] multipleValues)
     {
-        var builder = new string[1];
+        var builder = new List<string?>();
 
-        throw new NotImplementedException();
+        var escapedKey = Uri.EscapeDataString(key);
+
+        foreach (var (eachKey, eachValue) in this)
+        {
+            if (eachKey == escapedKey)
+            {
+                builder.Add(eachValue is null ? null : Uri.UnescapeDataString(eachValue));
+            }
+        }
+
+        multipleValues = builder.ToArray();
+        return multipleValues.Length > 0;
     }
-
-    /// <inheritdoc cref="IReadOnlyCollection{T}.Count"/>
-    public int Count() => IsEmpty() ? 0 : _builder.ToString().Count(c => c == '&') + 1;
 
     public QueryStringBuilder AddEscaped(string parameter)
     {
@@ -412,59 +491,9 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
         return _builder;
     }
 
-    public bool IsEmpty() => _builder.Length == 0;
-
-    public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
-    {
-        throw new NotImplementedException();
-        //if (IsEmpty())
-        //{
-        //    yield break;
-        //}
-        //// ignore the '?'
-        //var remaining = _builder.ToString().AsSpan(1);
-
-        //while (remaining.Length > 0)
-        //{
-        //    var endOfToken = remaining.IndexOfAny(['=', '&']);
-        //    if (endOfToken == -1)
-        //    {
-        //        yield return new KeyValuePair<string, string>(
-        //            Uri.UnescapeDataString(remaining.ToString()),
-        //            string.Empty
-        //        );
-        //        break;
-        //    }
-
-        //    var key = Uri.UnescapeDataString(remaining.Slice(0, endOfToken).ToString());
-
-        //    if (remaining[endOfToken] == '=')
-        //    {
-        //        remaining = remaining[(endOfToken + 1)..];
-        //        endOfToken = remaining.IndexOf('&');
-        //        if (endOfToken == -1)
-        //        {
-        //            yield return new KeyValuePair<string, string>(
-        //                key,
-        //                Uri.UnescapeDataString(remaining.ToString())
-        //            );
-        //            break;
-        //        }
-        //        yield return new KeyValuePair<string, string>(
-        //            key,
-        //            Uri.UnescapeDataString(remaining.Slice(0, endOfToken).ToString())
-        //        );
-        //    }
-        //    else
-        //    {
-        //        yield return new KeyValuePair<string, string>(key, string.Empty);
-        //    }
-
-        //    remaining = remaining[(endOfToken + 1)..];
-        //}
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
+    /// <summary>
+    /// Constructs a well-formed, escaped string representation of the current instance.
+    /// </summary>
+    /// <returns>The query string representing the current state of this builder.</returns>
     public override string ToString() => _builder.ToString();
 }

@@ -19,9 +19,14 @@ using System;
 /// <param name="name">
 /// The name to de/serialize the member to or from in the query string.
 /// </param>
+/// <param name="caseInsensitive">
+/// Indicates whether the query string parameter name is case-insensitive. Defaults to <see langword="false"/>.
+/// This value is used by source-generated code to parse a query string.
+/// </param>
 [AttributeUsage(
     AttributeTargets.Property | AttributeTargets.Field,
     Inherited = true,
     AllowMultiple = false
 )]
-public sealed class QueryStringParameterAttribute(string name) : Attribute;
+public sealed class QueryStringParameterAttribute(string name, bool caseInsensitive = false)
+    : Attribute;

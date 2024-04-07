@@ -9,9 +9,18 @@ using System;
 /// call to deserialize a value of a query string parameter. The method must match the following signature:
 /// <code>
 /// <c>internal static bool TryDeserialize(
-///     string memberName,
+///     string memberName, // optional
 ///     ReadOnlySpan&lt;char&gt; uriEncodedParameterName,
 ///     ReadOnlySpan&lt;char&gt; uriEncodedParameterValue,
+///     bool hasValue, // indicates presence of '='
+///     out T result
+/// );</c>
+/// </code>
+/// Alternatively the method may accept the entire query string.
+/// <code>
+/// <c>internal static bool TryDeserialize(
+///     string memberName, // optional
+///     ReadOnlySequence&lt;char&gt; queryString
 ///     out T result
 /// );</c>
 /// </code>

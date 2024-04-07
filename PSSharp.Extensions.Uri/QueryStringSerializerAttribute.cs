@@ -11,10 +11,9 @@ using System;
 /// <code>
 /// <c>
 /// private void Serialize(
-///     StringBuilder query,
+///     QueryStringBuilder builder,
 ///     string memberName,          // optional
-///     TMember memberValue,
-///     ref bool hasQueryParams
+///     TMember memberValue
 /// );
 /// </c>
 /// </code>
