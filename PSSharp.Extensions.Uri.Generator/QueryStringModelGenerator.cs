@@ -277,10 +277,26 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                     isOverride,
                     new QueryStringModelMethods(
                         appendQueryString,
-                        parse,
-                        tryParse,
-                        parseSpan,
-                        tryParseSpan,
+                        (
+                            parse
+                                ? ParsableSignatures.ParseStringIFormatProvider
+                                : ParsableSignatures.None
+                        )
+                            | (
+                                tryParse
+                                    ? ParsableSignatures.TryParseStringIFormatProvider
+                                    : ParsableSignatures.None
+                            ),
+                        (
+                            parseSpan
+                                ? ParsableSignatures.ParseStringIFormatProvider
+                                : ParsableSignatures.None
+                        )
+                            | (
+                                tryParseSpan
+                                    ? ParsableSignatures.ParseStringIFormatProvider
+                                    : ParsableSignatures.None
+                            ),
                         printMembers
                     ),
                     printMembersParameterName,
@@ -469,18 +485,37 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                 isSpanParsable,
                                 parameterName,
                                 isCollection,
-                                serializeMethodName,
-                                serializeMethod?.IsStatic ?? false,
-                                deserializeMethodName,
-                                ((IMethodSymbol?)deserializeMethod)?.Parameters.Length == 4,
-                                conditionMethodName,
-                                conditionMethod?.IsStatic ?? false,
-                                conditionTakesSelf,
-                                conditionTakesMemberName,
-                                conditionTakesValue,
-                                conditionAlways,
-                                false,
-                                conditionNotDefault
+                                serializeMethodName is null
+                                    ? new SerializerImplementation.EncodedString()
+                                    : new SerializerImplementation.Method(
+                                        serializeMethodName,
+                                        serializeMethod?.IsStatic ?? false,
+                                        true,
+                                        true,
+                                        true
+                                    ),
+                                deserializeMethodName is null
+                                    ? isSpanParsable
+                                        ? new DeserializerImplementation.SpanParse()
+                                        : isParsable
+                                            ? new DeserializerImplementation.Parse()
+                                            : new DeserializerImplementation.Method(
+                                                deserializeMethodName,
+                                                true,
+                                                true
+                                            )
+                                    : null,
+                                conditionMethodName is null
+                                    ? conditionAlways
+                                        ? new ConditionImplementation.Always()
+                                        : new ConditionImplementation.WhenNotDefault()
+                                    : new ConditionImplementation.Method(
+                                        conditionMethodName,
+                                        conditionMethod?.IsStatic ?? false,
+                                        conditionTakesSelf,
+                                        conditionTakesMemberName,
+                                        conditionTakesValue
+                                    )
                             );
                         })
                         .ToImmutableArray()
@@ -642,36 +677,36 @@ public class QueryStringModelGenerator : IIncrementalGenerator
         foreach (var member in source.Members)
         {
             // Condition
-            if (member.QueryConditionAlways)
+            if (member.Condition is ConditionImplementation.Always)
             {
                 AppendIndentation(text, indentation);
                 text.Append("//")
                     .Append(member.MemberName)
                     .AppendLine(" : QueryStringCondition.Always");
             }
-            else if (member.QueryConditionNever)
+            else if (member.Condition is ConditionImplementation.Never)
             {
                 continue;
             }
-            else if (member.ConditionMethod is not null)
+            else if (member.Condition is ConditionImplementation.Method conditionMethod)
             {
                 AppendIndentation(text, indentation);
                 text.Append("if (");
-                if (!member.IsConditionMethodStatic)
+                if (!conditionMethod.IsMethodStatic)
                 {
                     text.Append("this.");
                 }
-                text.Append(member.ConditionMethod).Append("(");
+                text.Append(conditionMethod.MethodName).Append("(");
 
-                if (member.ConditionMethodTakesSelf)
+                if (conditionMethod.HasSelfParameter)
                 {
                     text.Append("this, ");
                 }
-                if (member.ConditionMethodTakesMemberName)
+                if (conditionMethod.HasMemberNameParameter)
                 {
                     text.Append('"').Append(member.MemberName).Append("\", ");
                 }
-                if (member.ConditionMethodTakesValue)
+                if (conditionMethod.HasMemberValueParameter)
                 {
                     text.Append("this.").Append(member.MemberName);
                 }
@@ -689,14 +724,14 @@ public class QueryStringModelGenerator : IIncrementalGenerator
             indentation += 4;
 
             // Value
-            if (member.SerializeMethod is not null)
+            if (member.Serialize is SerializerImplementation.Method serializeMethod)
             {
                 AppendIndentation(text, indentation);
-                if (!member.IsSerializeMethodStatic)
+                if (!serializeMethod.IsMethodStatic)
                 {
                     text.Append("this.");
                 }
-                text.Append(member.SerializeMethod)
+                text.Append(serializeMethod.MethodName)
                     .Append("(query, \"")
                     .Append(member.MemberName)
                     .Append("\", this.")

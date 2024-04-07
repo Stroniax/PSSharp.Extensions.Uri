@@ -8,6 +8,6 @@ public sealed record QueryStringModelParameter(
     string QueryStringParameterName,
     bool IsCollection,
     SerializerImplementation Serialize,
-    DeserializerImplementation Deserialize,
+    DeserializerImplementation? Deserialize,
     ConditionImplementation Condition
 );
