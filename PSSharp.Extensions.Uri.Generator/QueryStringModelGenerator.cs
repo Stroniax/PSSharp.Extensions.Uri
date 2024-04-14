@@ -64,6 +64,9 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                     ),
                     QueryStringSerializerAttribute: compilation.GetTypeByMetadataName(
                         "PSSharp.Extensions.Uri.QueryStringSerializerAttribute"
+                    ),
+                    QueryStringBuilder: compilation.GetTypeByMetadataName(
+                        "PSSharp.Extensions.Uri.QueryStringBuilder"
                     )
                 )
         );
@@ -118,12 +121,12 @@ public class QueryStringModelGenerator : IIncrementalGenerator
 
                 var members = context.Source.GetMembers();
 
-                var appendQueryString = members.Any(m =>
+                var addToQueryString = members.Any(m =>
                     m
                         is IMethodSymbol
                         {
-                            Name: "AppendQueryString",
-                            Parameters.Length: 2,
+                            Name: "AddToQueryString",
+                            Parameters.Length: 1,
                             IsStatic: false,
                             IsAbstract: false,
                             IsPartialDefinition: true,
@@ -131,13 +134,8 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                         } method
                     && SymbolEqualityComparer.Default.Equals(
                         method.Parameters[0].Type,
-                        context.Others.StringBuilder
+                        context.Others.QueryStringBuilder
                     )
-                    && SymbolEqualityComparer.Default.Equals(
-                        method.Parameters[1].Type,
-                        context.Others.Boolean
-                    )
-                    && method.Parameters[1].RefKind == RefKind.Ref
                 );
 
                 var parse = members.Any(m =>
@@ -276,7 +274,7 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                     !context.Source.IsValueType && !context.Source.IsSealed,
                     isOverride,
                     new QueryStringModelMethods(
-                        appendQueryString,
+                        addToQueryString,
                         (
                             parse
                                 ? ParsableSignatures.ParseStringIFormatProvider
@@ -499,13 +497,13 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                         ? new DeserializerImplementation.SpanParse()
                                         : isParsable
                                             ? new DeserializerImplementation.Parse()
-                                            : new DeserializerImplementation.DeserializeFromMember(
-                                                deserializeMethodName,
-                                                true,
-                                                true,
-                                                true
-                                            )
-                                    : null,
+                                            : null
+                                    : new DeserializerImplementation.DeserializeFromMember(
+                                        deserializeMethodName,
+                                        true,
+                                        true,
+                                        true
+                                    ),
                                 conditionMethodName is null
                                     ? conditionAlways
                                         ? new ConditionImplementation.Always()
@@ -521,8 +519,6 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                         })
                         .ToImmutableArray()
                 );
-
-                //throw new System.Exception(source.ToString());
 
                 return source;
             }
@@ -665,14 +661,14 @@ public class QueryStringModelGenerator : IIncrementalGenerator
             );
         AppendIndentation(text, indentation)
             .AppendLine(
-                "public partial void AppendQueryString(global::System.Text.StringBuilder query, ref bool hasQueryParams)"
+                "public partial void AddToQueryString(global::PSSharp.Extensions.Uri.QueryStringBuilder builder)"
             );
         AppendIndentation(text, indentation).AppendLine("{");
         indentation += 4;
 
         AppendIndentation(text, indentation)
             .AppendLine(
-                "if (query is null) { throw new global::System.ArgumentNullException(nameof(query)); }"
+                "if (builder is null) { throw new global::System.ArgumentNullException(nameof(builder)); }"
             );
 
         foreach (var member in source.Members)
@@ -732,12 +728,21 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                 {
                     text.Append("this.");
                 }
-                text.Append(serializeMethod.MethodName)
-                    .Append("(query, \"")
-                    .Append(member.MemberName)
-                    .Append("\", this.")
-                    .Append(member.MemberName)
-                    .AppendLine(", ref hasQueryParams);");
+                text.Append(serializeMethod.MethodName).Append("(builder, ");
+
+                if (serializeMethod.HasSelfParameter)
+                {
+                    text.Append("this, ");
+                }
+                if (serializeMethod.HasMemberNameParameter)
+                {
+                    text.Append('\"').Append(member.MemberName).Append("\", ");
+                }
+                if (serializeMethod.HasMemberValueParameter)
+                {
+                    text.Append("this.").Append(member.MemberName);
+                }
+                text.AppendLine(");");
             }
             else if (member.IsCollection)
             {
@@ -749,14 +754,9 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                 indentation += 4;
 
                 AppendIndentation(text, indentation)
-                    .AppendLine("query.Append(hasQueryParams ? '&' : '?');");
-                AppendIndentation(text, indentation).AppendLine("hasQueryParams = true;");
-                AppendIndentation(text, indentation)
-                    .Append("query.Append(\"")
+                    .Append("builder.Add(\"")
                     .Append(member.QueryStringParameterName)
-                    .AppendLine(
-                        "\").Append('=').Append(global::System.Uri.EscapeDataString(item.ToString()));"
-                    );
+                    .AppendLine("\", item);");
 
                 indentation -= 4;
                 AppendIndentation(text, indentation).AppendLine("}");
@@ -764,14 +764,11 @@ public class QueryStringModelGenerator : IIncrementalGenerator
             else
             {
                 AppendIndentation(text, indentation)
-                    .AppendLine("query.Append(hasQueryParams ? '&' : '?');");
-                AppendIndentation(text, indentation).AppendLine("hasQueryParams = true;");
-                AppendIndentation(text, indentation)
-                    .Append("query.Append(\"")
+                    .Append("builder.Add(\"")
                     .Append(member.QueryStringParameterName)
-                    .Append("\").Append(global::System.Uri.EscapeDataString(this.")
+                    .Append("\", this.")
                     .Append(member.MemberName)
-                    .AppendLine(".ToString()));");
+                    .AppendLine(".ToString());");
             }
 
             indentation -= 4;

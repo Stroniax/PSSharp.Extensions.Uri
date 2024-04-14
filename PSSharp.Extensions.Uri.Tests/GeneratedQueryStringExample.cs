@@ -23,12 +23,17 @@ internal partial record GeneratedQueryStringExample : IQueryStringModel
         return true;
     }
 
-    private void WriteQux(StringBuilder ex, string memberName, int[] qux, ref bool hasQueryParams)
+    private void WriteQux(
+        QueryStringBuilder ex,
+        GeneratedQueryStringExample exx,
+        string memberName,
+        int[] qux
+    )
     {
         throw new NotImplementedException();
     }
 
-    public partial void AppendQueryString(StringBuilder query, ref bool hasQueryParams);
+    public partial void AddToQueryString(QueryStringBuilder builder);
 
     protected virtual partial bool PrintMembers(StringBuilder writer);
 

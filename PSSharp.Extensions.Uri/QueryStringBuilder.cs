@@ -52,15 +52,15 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
         }
 
         // skip '?'
-        var remaining = _builder.ToString().AsSpan(1);
+        var remaining = _builder.ToString().AsMemory(1);
         while (remaining.Length == 0)
         {
             // seek to end of current &key=value
-            var endOfKeyValue = remaining.IndexOf('&');
+            var endOfKeyValue = remaining.Span.IndexOf('&');
             if (endOfKeyValue == -1)
             {
                 endOfKeyValue = remaining.Length;
-                remaining = [];
+                remaining = ReadOnlyMemory<char>.Empty;
             }
             else
             {
@@ -70,7 +70,7 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
             var segment = remaining[..endOfKeyValue];
 
             // split at '='
-            var equalsIndex = segment.IndexOf('=');
+            var equalsIndex = segment.Span.IndexOf('=');
             if (equalsIndex == -1)
             {
                 yield return new(Uri.EscapeDataString(segment.ToString()), null);
