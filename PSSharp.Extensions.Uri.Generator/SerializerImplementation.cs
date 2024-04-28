@@ -26,13 +26,7 @@ public abstract record SerializerImplementation
     /// );
     /// </c></code>
     /// </summary>
-    public sealed record Method(
-        string MethodName,
-        bool IsMethodStatic,
-        bool HasSelfParameter,
-        bool HasMemberNameParameter,
-        bool HasMemberValueParameter
-    ) : SerializerImplementation;
+    public sealed record Method(string MethodName) : SerializerImplementation;
 
     public void Switch(Action unencodedString, Action encodedString, Action<Method> method)
     {

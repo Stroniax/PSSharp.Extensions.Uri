@@ -316,8 +316,8 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                     && value == 2 // QueryStringCondition.Never
                                 )
                             && m
-                                is IPropertySymbol { IsImplicitlyDeclared: false }
-                                    or IFieldSymbol { IsImplicitlyDeclared: false }
+                                is IPropertySymbol { IsImplicitlyDeclared: false, IsStatic: false }
+                                    or IFieldSymbol { IsImplicitlyDeclared: false, IsStatic: false }
                         )
                         .Select(m =>
                         {
@@ -485,13 +485,7 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                 isCollection,
                                 serializeMethodName is null
                                     ? new SerializerImplementation.EncodedString()
-                                    : new SerializerImplementation.Method(
-                                        serializeMethodName,
-                                        serializeMethod?.IsStatic ?? false,
-                                        true,
-                                        true,
-                                        true
-                                    ),
+                                    : new SerializerImplementation.Method(serializeMethodName),
                                 deserializeMethodName is null
                                     ? isSpanParsable
                                         ? new DeserializerImplementation.SpanParse()
@@ -508,13 +502,7 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                                     ? conditionAlways
                                         ? new ConditionImplementation.Always()
                                         : new ConditionImplementation.WhenNotDefault()
-                                    : new ConditionImplementation.Method(
-                                        conditionMethodName,
-                                        conditionMethod?.IsStatic ?? false,
-                                        conditionTakesSelf,
-                                        conditionTakesMemberName,
-                                        conditionTakesValue
-                                    )
+                                    : new ConditionImplementation.Method(conditionMethodName)
                             );
                         })
                         .ToImmutableArray()
@@ -688,34 +676,21 @@ public class QueryStringModelGenerator : IIncrementalGenerator
             else if (member.Condition is ConditionImplementation.Method conditionMethod)
             {
                 AppendIndentation(text, indentation);
-                text.Append("if (");
-                if (!conditionMethod.IsMethodStatic)
-                {
-                    text.Append("this.");
-                }
-                text.Append(conditionMethod.MethodName).Append("(");
-
-                if (conditionMethod.HasSelfParameter)
-                {
-                    text.Append("this, ");
-                }
-                if (conditionMethod.HasMemberNameParameter)
-                {
-                    text.Append('"').Append(member.MemberName).Append("\", ");
-                }
-                if (conditionMethod.HasMemberValueParameter)
-                {
-                    text.Append("this.").Append(member.MemberName);
-                }
-                text.AppendLine("))");
+                text.Append("if (")
+                    .Append("this.")
+                    .Append(conditionMethod.MethodName)
+                    .AppendLine("())");
             }
-            else // if (member.QueryConditionWhenNotDefault)
+            else // if (member.Condition is ConditionImplementation.WhenNotDefault)
             {
                 AppendIndentation(text, indentation);
-                text.Append("if (this.")
+                text.Append("if (!global::System.Collections.Generic.EqualityComparer<")
+                    .Append(member.MemberTypeName)
+                    .Append(">.Default.Equals(this.")
                     .Append(member.MemberName)
-                    .Append(" is not null")
-                    .AppendLine(")");
+                    .Append(", default(")
+                    .Append(member.MemberTypeName)
+                    .AppendLine(")))");
             }
             AppendIndentation(text, indentation).AppendLine("{");
             indentation += 4;
@@ -723,26 +698,10 @@ public class QueryStringModelGenerator : IIncrementalGenerator
             // Value
             if (member.Serialize is SerializerImplementation.Method serializeMethod)
             {
-                AppendIndentation(text, indentation);
-                if (!serializeMethod.IsMethodStatic)
-                {
-                    text.Append("this.");
-                }
-                text.Append(serializeMethod.MethodName).Append("(builder, ");
-
-                if (serializeMethod.HasSelfParameter)
-                {
-                    text.Append("this, ");
-                }
-                if (serializeMethod.HasMemberNameParameter)
-                {
-                    text.Append('\"').Append(member.MemberName).Append("\", ");
-                }
-                if (serializeMethod.HasMemberValueParameter)
-                {
-                    text.Append("this.").Append(member.MemberName);
-                }
-                text.AppendLine(");");
+                AppendIndentation(text, indentation)
+                    .Append("this.")
+                    .Append(serializeMethod.MethodName)
+                    .AppendLine("(builder);");
             }
             else if (member.IsCollection)
             {
@@ -756,7 +715,7 @@ public class QueryStringModelGenerator : IIncrementalGenerator
                 AppendIndentation(text, indentation)
                     .Append("builder.Add(\"")
                     .Append(member.QueryStringParameterName)
-                    .AppendLine("\", item);");
+                    .AppendLine("\", item.ToString());");
 
                 indentation -= 4;
                 AppendIndentation(text, indentation).AppendLine("}");

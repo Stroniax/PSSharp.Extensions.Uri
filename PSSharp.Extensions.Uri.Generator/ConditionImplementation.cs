@@ -12,13 +12,7 @@ public abstract record ConditionImplementation
 
     public sealed record Never : ConditionImplementation;
 
-    public sealed record Method(
-        string MethodName,
-        bool IsMethodStatic,
-        bool HasSelfParameter,
-        bool HasMemberNameParameter,
-        bool HasMemberValueParameter
-    ) : ConditionImplementation;
+    public sealed record Method(string MethodName) : ConditionImplementation;
 
     public void Switch(Action always, Action whenNotDefault, Action never, Action<Method> method)
     {

@@ -52,7 +52,7 @@ public class UriSpanDecodeBenchmark
     public string FastUnescapeDataString()
     {
         Span<char> buffer = stackalloc char[EncodedValue.Length];
-        UriExtensions.FastUnescapeDataString(EncodedValue, buffer);
+        //UriExtensions.FastUnescapeDataString(EncodedValue, buffer);
         return new string(buffer[..(buffer.IndexOf('\0'))]);
     }
 
@@ -60,6 +60,6 @@ public class UriSpanDecodeBenchmark
     public void FastUnescapeDataSpan()
     {
         Span<char> buffer = stackalloc char[EncodedValue.Length];
-        UriExtensions.FastUnescapeDataString(EncodedValue, buffer);
+        //UriExtensions.FastUnescapeDataString(EncodedValue, buffer);
     }
 }
