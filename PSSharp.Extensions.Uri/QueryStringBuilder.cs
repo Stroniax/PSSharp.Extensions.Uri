@@ -25,7 +25,22 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
     private readonly StringBuilder _builder = new();
 
     /// <inheritdoc cref="IReadOnlyCollection{T}.Count"/>
-    public int Count() => IsEmpty() ? 0 : _builder.ToString().Count(c => c == '&') + 1;
+    public int Count()
+    {
+        if (IsEmpty())
+        {
+            return 0;
+        }
+
+        var count = 1;
+
+        foreach (var chunk in _builder.GetChunks())
+        {
+            count += chunk.Span.Count('&');
+        }
+
+        return count;
+    }
 
     int IReadOnlyCollection<KeyValuePair<string, string?>>.Count => Count();
 
@@ -117,7 +132,27 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
         return false;
     }
 
-    public bool TryGetFirstValue(string key, out string firstValue)
+    /// <summary>
+    /// Finds the first value associated with the specified key, if present.
+    /// </summary>
+    /// <param name="key">The case-sensitive key of the value to find.</param>
+    /// <param name="firstValue">
+    /// The first value in the query string with key <paramref name="key"/>.
+    /// <para>
+    /// If the key is present without a value identified by the equal sign '=', this parameter will be assigned
+    /// <see langword="null"/>. <c>?key</c>
+    /// </para>
+    /// <para>
+    /// If the key is present with an equal sign without a proceeding value (e.g. an ampersand '&amp;' or the
+    /// end of the query string), this parameter will be assigned an empty string. <c>?key=&amp;other=value</c>
+    /// </para>
+    /// <para>
+    /// In other cases, this parameter will be assigned the value of the key-value pair,. For <c>?key=value</c>,
+    /// this parameter will be assigned "<c>value</c>".
+    /// </para>
+    /// </param>
+    /// <returns></returns>
+    public bool TryGetFirstValue(string key, out string? firstValue)
     {
         if (IsEmpty())
         {
@@ -147,6 +182,14 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
                     firstValue = Uri.UnescapeDataString(
                         remaining.Slice(valueStart + 1, valueEnd).ToString()
                     );
+                    return true;
+                }
+                else if (
+                    (valueStart < remaining.Length && remaining[valueStart] == '&')
+                    || (valueStart == remaining.Length)
+                )
+                {
+                    firstValue = null;
                     return true;
                 }
             }

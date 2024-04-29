@@ -153,7 +153,7 @@ public sealed class QueryStringBuilderTests
     {
         var actual = builder.TryGetFirstValue("key", out _);
 
-        Assert.True(actual, "Builder does contain the expected key.");
+        Assert.True(actual, $"Builder does contain the expected key 'key'. Builder: {builder}");
     }
 
     [Theory]
