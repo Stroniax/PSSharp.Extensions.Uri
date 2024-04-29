@@ -30,17 +30,13 @@ public sealed class QueryStringConditionAttribute : Attribute
     /// <code>
     /// <c>
     /// partial class MyModel : IQueryStringModel
-    ///     [QueryStringCondition(nameof(ShouldSerialize))]
+    ///     [QueryStringCondition(nameof(ShouldSerializeOddNumber))]
     ///     public int OddNumber { get; set; }
     ///
     ///     // Only allows the member to be serialized if it is an odd number.
-    ///     internal static bool ShouldSerialize(
-    ///         MyModel instance, // type of model
-    ///         string memberName,
-    ///         int member // type of member
-    ///     ) => member % 2 == 1;
+    ///     private bool ShouldSerializeOddNumber() => this.OddNumber % 2 == 1;
     ///
-    ///     public partial void AppendQueryString(StringBuilder query, ref bool hasQueryParams);
+    ///     public partial void AddToQueryString(QueryStringBuilder query);
     /// }
     /// </c>
     /// </code>

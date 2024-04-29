@@ -10,12 +10,7 @@ using System;
 /// though the name will vary and is identified by <paramref name="serializer"/>:
 /// <code>
 /// <c>
-/// private void Serialize(
-///     QueryStringBuilder builder,
-///     TModel instance,             // optional if static
-///     string memberName,          // optional
-///     TMember memberValue        // optional
-/// );
+/// private void Serialize(QueryStringBuilder builder);
 /// </c>
 /// </code>
 /// </summary>
