@@ -458,7 +458,6 @@ public sealed class QueryStringBuilder : IReadOnlyCollection<KeyValuePair<string
                         or ','
                         or ';'
                         or '='
-                        or '%'
                         or ' ' // should be %20 or + depending on context
                 || (
                     c == '%'

@@ -11,30 +11,27 @@ public sealed partial record GeneratedImplementation : IQueryStringModel
     [QueryStringParameter(IntParameterName, true)]
     public int Int { get; init; }
 
+    [QueryStringCondition(QueryStringCondition.Always)]
+    public int AlwaysInt { get; init; }
+
+    [QueryStringSerializer(nameof(CustomSerializer))]
+    public double CustomSerialized { get; init; }
+
+    private void CustomSerializer(QueryStringBuilder builder)
+    {
+        builder.AddEscaped("custom_serialized", $"%20_{CustomSerialized}_%20");
+    }
+
     private bool StringCondition() => !string.IsNullOrWhiteSpace(StringWithCondition);
 
+    // The superior way to instruct a source generator to write code.
+    // Use an attribute? Pedestrian.
+    // Use a partial method? Now we're talking.
     public partial void AddToQueryString(QueryStringBuilder builder);
 }
 
 public class GeneratedImplementationTests
 {
-    /// <summary>
-    /// These tests rely on the 'default' GeneratedImplementation instance to not serialize any properties.
-    /// </summary>
-    [Fact]
-    public void Baseline_new_remains_empty()
-    {
-        // Arrange
-        var model = new GeneratedImplementation();
-        var query = new QueryStringBuilder();
-
-        // Act
-        model.AddToQueryString(query);
-
-        // Assert
-        Assert.Empty(query);
-    }
-
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
@@ -49,15 +46,7 @@ public class GeneratedImplementationTests
         model.AddToQueryString(query);
 
         // Assert
-        Assert.DoesNotContain(
-            query,
-            kvp =>
-                string.Equals(
-                    nameof(GeneratedImplementation.StringWithCondition),
-                    kvp.Key,
-                    StringComparison.OrdinalIgnoreCase
-                )
-        );
+        query.AssertDoesNotContainKey(nameof(GeneratedImplementation.StringWithCondition));
     }
 
     [Theory]
@@ -72,12 +61,7 @@ public class GeneratedImplementationTests
         model.AddToQueryString(query);
 
         // Assert
-        Assert.Contains(
-            query,
-            kvp =>
-                string.Equals(nameof(GeneratedImplementation.StringWithCondition), kvp.Key)
-                && string.Equals(value, kvp.Value)
-        );
+        query.AssertContainsValue(nameof(GeneratedImplementation.StringWithCondition), value);
     }
 
     [Fact]
@@ -91,8 +75,7 @@ public class GeneratedImplementationTests
         model.AddToQueryString(query);
 
         // Assert
-        var contains = query.ContainsKey(nameof(GeneratedImplementation.StringWithoutCondition));
-        Assert.False(contains, "Bar should not be serialized.");
+        query.AssertDoesNotContainKey(nameof(GeneratedImplementation.StringWithoutCondition));
     }
 
     [Theory]
@@ -109,12 +92,7 @@ public class GeneratedImplementationTests
         model.AddToQueryString(query);
 
         // Assert
-        Assert.Contains(
-            query,
-            kvp =>
-                string.Equals(nameof(GeneratedImplementation.StringWithoutCondition), kvp.Key)
-                && string.Equals(value, kvp.Value)
-        );
+        query.AssertContainsValue(nameof(GeneratedImplementation.StringWithoutCondition), value);
     }
 
     [Fact]
@@ -128,8 +106,7 @@ public class GeneratedImplementationTests
         model.AddToQueryString(query);
 
         // Assert
-        var contains = query.ContainsKey(GeneratedImplementation.IntParameterName);
-        Assert.False(contains, "Qux should not be serialized.");
+        query.AssertDoesNotContainKey(GeneratedImplementation.IntParameterName);
     }
 
     [Theory]
@@ -145,11 +122,72 @@ public class GeneratedImplementationTests
         model.AddToQueryString(query);
 
         // Assert
-        Assert.Contains(
-            query,
-            kvp =>
-                string.Equals(GeneratedImplementation.IntParameterName, kvp.Key)
-                && string.Equals(value.ToString(), kvp.Value)
+        query.AssertContainsValue(GeneratedImplementation.IntParameterName, value.ToString());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(-1)]
+    public void QueryStringParameterAttribute_sets_parameter_name_when_serialized(int value)
+    {
+        // Arrange
+        var model = new GeneratedImplementation() { Int = value };
+        var query = new QueryStringBuilder();
+
+        // Act
+        model.AddToQueryString(query);
+
+        // Assert
+        query.AssertContainsValue(GeneratedImplementation.IntParameterName, value.ToString());
+        query.AssertDoesNotContainKey(nameof(GeneratedImplementation.Int));
+    }
+
+    [Fact]
+    public void QueryStringCondition_Always_always_serializes()
+    {
+        // Arrange
+        var model = new GeneratedImplementation() { AlwaysInt = default };
+        var query = new QueryStringBuilder();
+
+        // Act
+        model.AddToQueryString(query);
+
+        // Assert
+        query.AssertContainsValue(
+            nameof(GeneratedImplementation.AlwaysInt),
+            default(int).ToString()
         );
+    }
+
+    [Theory]
+    [InlineData("Test with spaces")]
+    public void String_serializes_and_deserializes_with_spaces(string value)
+    {
+        // Arrange
+        var model = new GeneratedImplementation() { StringWithoutCondition = value };
+        var query = new QueryStringBuilder();
+
+        // Act
+        model.AddToQueryString(query);
+
+        // Assert
+        query.AssertContainsValue(nameof(GeneratedImplementation.StringWithoutCondition), value);
+    }
+
+    [Theory]
+    [InlineData(11.0)]
+    public void QueryStringSerializer_uses_custom_serializer(double value)
+    {
+        // Arrange
+        var model = new GeneratedImplementation() { CustomSerialized = value };
+        var query = new QueryStringBuilder();
+
+        // Act
+        model.AddToQueryString(query);
+
+        // Assert
+        query.AssertContainsValue("custom_serialized", $" _{value}_ ");
+        // (also the prop should not be serialized)
+        query.AssertDoesNotContainKey(nameof(GeneratedImplementation.CustomSerialized));
     }
 }
